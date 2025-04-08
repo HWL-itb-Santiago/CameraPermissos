@@ -69,6 +69,12 @@ kotlin {
             implementation(libs.androidx.activityCompose)
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.ktor.client.okhttp)
+            implementation("com.google.accompanist:accompanist-permissions:0.37.2")
+            implementation("androidx.camera:camera-core:1.5.0-alpha06")
+            implementation("androidx.camera:camera-camera2:1.5.0-alpha06")
+            implementation("androidx.camera:camera-compose:1.5.0-alpha06")
+            implementation("androidx.camera:camera-lifecycle:1.5.0-alpha06")
+            implementation("androidx.camera:camera-extensions:1.5.0-alpha06")
         }
 
         jvmMain.dependencies {

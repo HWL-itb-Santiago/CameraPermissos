@@ -8,12 +8,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import cat.itb.m78.exercices.camera.CameraScreen
 import cat.itb.m78.exercices.camera.FeatureThatRequiresCameraPermission
+import cat.itb.m78.exercices.navigation.Navigation
 
 class AppActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { CameraScreen() }
+        setContent { Navigation() }
     }
 }
 

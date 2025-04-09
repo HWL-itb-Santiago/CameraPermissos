@@ -22,6 +22,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class CameraViewModel() : ViewModel(){
+    val listOfPhotos = mutableListOf<String>()
+    var lastPhotoTaken = mutableStateOf("")
+
     private val _surferRequest = MutableStateFlow<SurfaceRequest?>(null)
     val surferRequest: StateFlow<SurfaceRequest?> = _surferRequest.asStateFlow()
 
@@ -67,6 +70,8 @@ class CameraViewModel() : ViewModel(){
                 }
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     Log.d("CameraPreview", "Photo capture succeeded: ${output.savedUri}")
+                    lastPhotoTaken.value = output.savedUri?.toString() ?: ""
+                    listOfPhotos.add(lastPhotoTaken.value)
                 }
             }
         )

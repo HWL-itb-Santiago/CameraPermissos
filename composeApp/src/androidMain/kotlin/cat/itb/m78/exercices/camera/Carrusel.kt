@@ -8,10 +8,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import coil3.compose.AsyncImage
 
 @Composable
-fun Carrusel()
+fun Carrusel(uirImages: List<String>)
 {
+    val listOfImages = uirImages
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -19,6 +21,13 @@ fun Carrusel()
         contentAlignment = Alignment.Center
     )
     {
+        listOfImages.forEach()
+        {image ->
+            AsyncImage(
+                model = image,
+                contentDescription = "imagen"
+            )
+        }
         Text("Carrusel de fotos")
     }
 }

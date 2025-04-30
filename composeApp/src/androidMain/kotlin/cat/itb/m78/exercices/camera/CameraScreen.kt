@@ -23,10 +23,16 @@ import coil3.compose.AsyncImage
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.CameraPositionState
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.rememberCameraPositionState
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun CameraScreen(goToCarrouselScreen: (List<String>) -> Unit) {
+fun CameraScreen(goToCarrouselScreen: (List<String>) -> Unit){
     val cameraPermissionState = rememberPermissionState(
         android.Manifest.permission.CAMERA
     )
@@ -74,7 +80,7 @@ fun CameraScreen(goToCarrouselScreen: (List<String>) -> Unit) {
                             Text("Take Photo")
                         }
                         Button({
-                            goToCarrouselScreen(viewModel.listOfPhotos)
+                            goToCarrouselScreen(viewModel.listOfPhotos.toList())
                         }) {
                             Text("Carousel")
                         }
@@ -82,6 +88,23 @@ fun CameraScreen(goToCarrouselScreen: (List<String>) -> Unit) {
                 }
 
             }
+        }
+    }
+}
+
+@Composable
+fun MapsScreen(){
+    val singapore = LatLng(1.35, 103.87)
+    val cameraPositionState: CameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(singapore, 11f)
+    }
+    Box(Modifier.fillMaxSize()) {
+        GoogleMap(cameraPositionState = cameraPositionState)
+        Button(onClick = {
+            // Move the camera to a new zoom level
+            cameraPositionState.move(CameraUpdateFactory.zoomIn())
+        }) {
+            Text(text = "Zoom In")
         }
     }
 }

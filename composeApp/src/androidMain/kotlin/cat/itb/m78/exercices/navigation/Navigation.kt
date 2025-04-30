@@ -7,12 +7,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import cat.itb.m78.exercices.camera.CameraScreen
 import cat.itb.m78.exercices.camera.Carrusel
+import cat.itb.m78.exercices.camera.MapsScreen
 import kotlinx.serialization.Serializable
 
 data object Destination
 {
     @Serializable
-    data object CameraScreen
+    data object MapsScreen
 
     @Serializable
     data class  CarouselScreen(val uriImages: List<String>)
@@ -23,18 +24,20 @@ fun Navigation() {
     val navController = rememberNavController()
     NavHost(
         navController = navController,
-        startDestination = Destination.CameraScreen
+        startDestination = Destination.MapsScreen
     )
     {
-        composable<Destination.CameraScreen> {
-            CameraScreen { images ->
-                navController.navigate(Destination.CarouselScreen(images))
-            }
+        composable<Destination.MapsScreen> {
+            MapsScreen()
         }
 
         composable<Destination.CarouselScreen> {backStack ->
             val listOfImages =backStack.toRoute<Destination.CarouselScreen>().uriImages
-            Carrusel(listOfImages)
+            Carrusel(listOfImages,
+                goToCameraScreen = {
+                    navController.navigate(Destination.MapsScreen)
+                }
+            )
         }
     }
 }

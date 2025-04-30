@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class CameraViewModel() : ViewModel(){
-    val listOfPhotos = mutableListOf<String>()
+    var listOfPhotos = mutableListOf<String>()
     var lastPhotoTaken = mutableStateOf("")
 
     private val _surferRequest = MutableStateFlow<SurfaceRequest?>(null)

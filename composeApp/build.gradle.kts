@@ -11,6 +11,7 @@ plugins {
     alias(libs.plugins.compose.hotreload)
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlinx.serialization)
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
 }
 
 composeCompiler {
@@ -71,6 +72,7 @@ kotlin {
             implementation(libs.androidx.activityCompose)
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.ktor.client.okhttp)
+            implementation ("com.google.maps.android:maps-compose:6.6.0")
             implementation("com.google.accompanist:accompanist-permissions:0.37.2")
             implementation("androidx.camera:camera-core:1.5.0-alpha06")
             implementation("androidx.camera:camera-camera2:1.5.0-alpha06")
@@ -136,6 +138,21 @@ compose.desktop {
         }
     }
 }
+secrets {
+    // Optionally specify a different file name containing your secrets.
+    // The plugin defaults to "local.properties"
+    propertiesFileName = "secrets.properties"
+
+    // A properties file containing default secret values. This file can be
+    // checked in version control.
+    defaultPropertiesFileName = "local.defaults.properties"
+
+    // Configure which keys should be ignored by the plugin by providing regular expressions.
+    // "sdk.dir" is ignored by default.
+    ignoreList.add("keyToIgnore") // Ignore the key "keyToIgnore"
+    ignoreList.add("sdk.*")       // Ignore all keys matching the regexp "sdk.*"
+}
+
 
 tasks.register<ComposeHotRun>("runHot") {
     mainClass.set("HotrunKt")

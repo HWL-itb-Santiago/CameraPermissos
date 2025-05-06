@@ -6,8 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import cat.itb.m78.exercices.camera.CameraScreen
-import cat.itb.m78.exercices.camera.FeatureThatRequiresCameraPermission
+
 import cat.itb.m78.exercices.navigation.Navigation
 
 class AppActivity : ComponentActivity() {

@@ -79,6 +79,7 @@ kotlin {
             implementation("androidx.camera:camera-compose:1.5.0-alpha06")
             implementation("androidx.camera:camera-lifecycle:1.5.0-alpha06")
             implementation("androidx.camera:camera-extensions:1.5.0-alpha06")
+            implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
         }
 
         jvmMain.dependencies {
@@ -112,6 +113,7 @@ android {
 
 //https://developer.android.com/develop/ui/compose/testing#setup
 dependencies {
+    implementation(libs.play.services.location)
     androidTestImplementation(libs.androidx.uitest.junit4)
     debugImplementation(libs.androidx.uitest.testManifest)
 }

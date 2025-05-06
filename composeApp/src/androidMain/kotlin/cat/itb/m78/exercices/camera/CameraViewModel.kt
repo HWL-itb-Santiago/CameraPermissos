@@ -76,8 +76,4 @@ class CameraViewModel() : ViewModel(){
             }
         )
     }
-    fun showPhoto()
-    {
-//        ImageCapture.OnImageCapturedCallback
-    }
 }

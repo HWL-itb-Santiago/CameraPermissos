@@ -11,7 +11,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
@@ -31,13 +30,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DrawerMenu(
-    content: @Composable (PaddingValues) -> Unit
-) {
+fun DrawerMenu(navController: NavHostController) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -45,40 +44,51 @@ fun DrawerMenu(
         drawerContent = {
             ModalDrawerSheet {
                 Column(
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
                         .verticalScroll(rememberScrollState())
                 ) {
                     Spacer(Modifier.height(12.dp))
-                    Text("Drawer Title", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleLarge)
+                    Text("FlorApp 🌸", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleLarge)
                     HorizontalDivider()
 
-                    Text("Section 1", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleMedium)
+                    Text("Acciones", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleMedium)
                     NavigationDrawerItem(
-                        label = { Text("Item 1") },
+                        label = { Text("Capturar flor") },
                         selected = false,
-                        onClick = { /* Handle click */ }
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate(Destination.CameraScreen)
+                        }
                     )
                     NavigationDrawerItem(
-                        label = { Text("Item 2") },
+                        label = { Text("Galería") },
                         selected = false,
-                        onClick = { /* Handle click */ }
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate(Destination.CameraScreen)
+                        }
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Estadísticas") },
+                        selected = false,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate(Destination.CameraScreen)
+                        }
                     )
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                    Text("Section 2", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleMedium)
+                    Text("Configuración", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleMedium)
                     NavigationDrawerItem(
-                        label = { Text("Settings") },
+                        label = { Text("Ajustes") },
                         selected = false,
                         icon = { Icon(Icons.Outlined.Settings, contentDescription = null) },
-                        badge = { Text("20") }, // Placeholder
-                        onClick = { /* Handle click */ }
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("Help and feedback") },
-                        selected = false,
-                        icon = { Icon(Icons.Outlined.Home, contentDescription = null) },
-                        onClick = { /* Handle click */ },
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate(Destination.CameraScreen)
+                        }
                     )
                     Spacer(Modifier.height(12.dp))
                 }
@@ -86,56 +96,61 @@ fun DrawerMenu(
         },
         drawerState = drawerState
     ) {
-        Scaffold (
+        Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Navigation Drawer Example") },
+                    title = { Text("FlorApp") },
                     navigationIcon = {
                         IconButton(onClick = {
                             scope.launch {
-                                if (drawerState.isClosed) {
-                                    drawerState.open()
-                                } else {
-                                    drawerState.close()
-                                }
+                                if (drawerState.isClosed) drawerState.open() else drawerState.close()
                             }
                         }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu")
+                            Icon(Icons.Default.Menu, contentDescription = "Menú")
                         }
                     }
                 )
             }
         ) { innerPadding ->
-            content(innerPadding)
+            MenuContent(innerPadding, navController)
         }
     }
 }
 
-//@Composable
-//fun DrawerMenu(content: @Composable () -> Unit) {
-//    // Estado del Drawer
-//    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-//    val scope = rememberCoroutineScope()
-//
-//    // Contenido del Drawer
-//    ModalNavigationDrawer(
-//        drawerState = drawerState,
-//        drawerContent = {
-//            // Aquí defines el contenido de tu Drawer, como botones o listas
-//            Column {
-//                Text("Opción 1")
-//                Text("Opción 2")
-//                Button(onClick = { scope.launch { drawerState.close() } }) {
-//                    Text("Cerrar")
-//                }
-//            }
-//        },
-//        gesturesEnabled = drawerState.isOpen, // Solo habilitar gestos si el Drawer está abierto
-//        content = {
-//            // El contenido principal de la pantalla (tu mapa)
-//            Box(Modifier.fillMaxSize()) {
-//                content() // Aquí pasas el contenido que tiene el mapa y otros componentes
-//            }
-//        }
-//    )
-//}
+
+@Composable
+fun MenuContent(innerPadding: PaddingValues = PaddingValues(), navController: NavController) {
+    Box(
+        modifier = Modifier
+            .padding(innerPadding)
+            .fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text("¡Bienvenido a FlorApp!", style = MaterialTheme.typography.headlineSmall)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Captura y registra flores en tu entorno 🌿")
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Button(onClick = { navController.navigate(Destination.CameraScreen) }) {
+                Text("📷 Capturar flor")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(onClick = { navController.navigate(Destination.CameraScreen) }) {
+                Text("🖼 Ver galería")
+            }
+        }
+    }
+}
+
+
+@Composable
+fun Menu(navHostController: NavHostController)
+{
+    DrawerMenu(navController = navHostController)
+}

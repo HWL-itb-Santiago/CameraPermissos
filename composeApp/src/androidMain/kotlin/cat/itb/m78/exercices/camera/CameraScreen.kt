@@ -68,98 +68,94 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-import androidx.compose.ui.platform.LocalContext as LocalContext1
+import androidx.compose.ui.platform.LocalContext
+import cat.itb.m78.exercices.createDriver
+import cat.itb.m78.exercices.db.Database
+import cat.itb.m78.exercises.db.MarkersQueries
+
+
+object AppDatabaseProvider {
+    private val driver by lazy { createDriver() }
+    val database: Database by lazy { Database(driver) }
+}
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun CameraScreen(goToCarrouselScreen: (List<String>) -> Unit){
-    val cameraPermissionState = rememberPermissionState(
-        Manifest.permission.CAMERA
+fun CameraScreen() {
+    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val viewModel: CameraViewModel = viewModel(
+        factory = CameraViewModelFactory(
+            markersQueries = AppDatabaseProvider.database.markersQueries
+        )
     )
-    if (!cameraPermissionState.status.isGranted)
-    {
-        RequiresPermissions()
+
+    LaunchedEffect(key1 = cameraPermissionState.status) {
+        if (!cameraPermissionState.status.isGranted) {
+            cameraPermissionState.launchPermissionRequest()
+        }
     }
-    else
-    {
-        val viewModel = viewModel { CameraViewModel() }
-        val context = LocalContext1.current
-        val lifecycleOwner = LocalLifecycleOwner.current
-        LaunchedEffect(lifecycleOwner) {
+
+    if (!cameraPermissionState.status.isGranted) {
+        // Muestra algo mientras no se conceda el permiso
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Se necesita permiso de cámara para continuar.")
+        }
+    } else {
+        LaunchedEffect(Unit) {
             viewModel.bindToCamera(context.applicationContext, lifecycleOwner)
         }
+
         val surfaceRequest by viewModel.surferRequest.collectAsState()
+
         surfaceRequest?.let { request ->
-            Box {
+            Box(modifier = Modifier.fillMaxSize()) {
                 CameraXViewfinder(
                     surfaceRequest = request,
                     modifier = Modifier.fillMaxSize()
                 )
+
+                // Botón para cerrar cámara
                 Box(
                     contentAlignment = Alignment.TopEnd,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(end = 10.dp, top = 50.dp),
-                )
-                {
-                    Button({ viewModel.closeCamera() }) {
-                        Text("Close Camera")
+                        .padding(end = 10.dp, top = 50.dp)
+                ) {
+                    Button(onClick = { viewModel.closeCamera() }) {
+                        Text("Cerrar cámara")
                     }
                 }
+
+                // Botones inferiores
                 Box(
                     contentAlignment = Alignment.BottomCenter,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(bottom = 150.dp),
-                )
-                {
+                        .padding(bottom = 150.dp)
+                ) {
                     Row {
-                        Button({
-                            viewModel.takePhoto(context)
-                        }) {
-                            Text("Take Photo")
+                        Button(onClick = { viewModel.takePhoto(context) }) {
+                            Text("📸 Capturar")
                         }
-                        Button({
-                            goToCarrouselScreen(viewModel.listOfPhotos.toList())
+
+                        Button(onClick = {
+                            // Navegar a la galería/carrousel si quieres:
+                            // navController.navigate("carrousel")
                         }) {
-                            Text("Carousel")
+                            Text("🖼 Ver galería")
                         }
                     }
                 }
-
             }
         }
     }
 }
 
-//@Composable
-//fun MapsScreen(){
-//    val singapore = LatLng(1.35, 103.87)
-//    val cameraPositionState: CameraPositionState = rememberCameraPositionState {
-//        position = CameraPosition.fromLatLngZoom(singapore, 11f)
-//    }
-//    Box(Modifier.fillMaxSize()) {
-//        GoogleMap(cameraPositionState = cameraPositionState)
-//        Button(onClick = {
-//            // Move the camera to a new zoom level
-//            cameraPositionState.move(CameraUpdateFactory.zoomIn())
-//        }) {
-//            Text(text = "Zoom In")
-//        }
-//    }
-//}
-
 
 data class CustomMarker(val id: String, val position: LatLng)
-
-@SuppressLint("UnrememberedMutableState")
-@Composable
-fun MapTarget(currentLat: Double, currentLng: Double) {
-        AdvancedMarker(
-            state = MarkerState(position = LatLng(currentLat, currentLng)),
-            title = "My Position"
-        )
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresPermission(
@@ -170,7 +166,7 @@ fun MapScreen(usePreciseLocation: Boolean) {
     val markers = remember { mutableStateListOf<CustomMarker>() }
     var mapLoaded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val context = LocalContext1.current
+    val context = LocalContext.current
     val locationClient = remember {
         LocationServices.getFusedLocationProviderClient(context)
     }
@@ -232,160 +228,148 @@ fun MapScreen(usePreciseLocation: Boolean) {
         }
     }
 
-    // Aquí se invoca el DrawerMenu, pasando el contenido del mapa como argumento
-    DrawerMenu(
-//        drawerState = drawerState,
-//        drawerContent = {
-//            // Aquí defines el contenido de tu Drawer, como botones o listas
-//            Column {
-//                Text("Opción 1")
-//                Text("Opción 2")
-//                Button(onClick = { scopeDrawer.launch { drawerState.close() } }) {
-//                    Text("Cerrar")
-//                }
-//            }
-//        },
-//        gesturesEnabled = drawerState.isOpen, // Solo habilitar gestos si el Drawer está abierto
-        content = {
-            Box(Modifier.fillMaxSize()) {
-                // Aquí, agregar el botón para abrir el Drawer (por ejemplo, un icono de hamburguesa)
-                IconButton(
-                    onClick = { openDrawer() },
-                    modifier = Modifier.padding(16.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxSize(0.8f)
+            .padding(bottom = 56.dp) // Espacio para el FAB
+            .padding(top = 56.dp), // Espacio para el botón de menú
+        contentAlignment = Alignment.Center,
+
+        ) {
+        // Aquí, agregar el botón para abrir el Drawer (por ejemplo, un icono de hamburguesa)
+        IconButton(
+            onClick = { openDrawer() },
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Icon(Icons.Default.Menu, contentDescription = "Abrir menú")
+        }
+        if (isLoading) {
+            // Indicador de carga mientras se obtiene ubicación
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            // Mapa y elementos después de obtener ubicación
+            GoogleMap(
+                cameraPositionState = cameraPositionState,
+                googleMapOptionsFactory = { GoogleMapOptions().mapId("DEMO_MAP_ID") },
+                onMapClick = { latLng -> markers.add(CustomMarker("Marker ${markers.size + 1}", latLng)) },
+                onMapLoaded = {
+                    mapLoaded = true
+                }
+            ) {
+                markers.forEach { marker ->
+                    AdvancedMarker(
+                        state = MarkerState(position = marker.position),
+                        title = marker.id
+                    )
+                }
+            }
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            isLoading = true
+                            val result = withContext(Dispatchers.IO) {
+                                locationClient.getCurrentLocation(
+                                    Priority.PRIORITY_HIGH_ACCURACY,
+                                    CancellationTokenSource().token
+                                ).await()
+                            }
+
+                            result?.let {
+                                val latLng = LatLng(it.latitude, it.longitude)
+                                currentLat.value = it.latitude
+                                currentLng.value = it.longitude
+                                markers.add(CustomMarker("Mi ubicación", latLng))
+
+                                withContext(Dispatchers.Main) {
+                                    cameraPositionState.move(
+                                        CameraUpdateFactory.newLatLngZoom(latLng, 15f)
+                                    )
+                                    locationInfo =
+                                        "Ubicación actual:\nlat: ${it.latitude}, long: ${it.longitude}"
+                                }
+                            }
+                            isLoading = false
+                        }
+                    }
                 ) {
-                    Icon(Icons.Default.Menu, contentDescription = "Abrir menú")
+                    Text("Actualizar ubicación")
                 }
 
-                if (isLoading) {
-                    // Indicador de carga mientras se obtiene ubicación
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                } else {
-                    // Mapa y elementos después de obtener ubicación
-                    GoogleMap(
-                        cameraPositionState = cameraPositionState,
-                        googleMapOptionsFactory = { GoogleMapOptions().mapId("DEMO_MAP_ID") },
-                        onMapClick = { latLng -> markers.add(CustomMarker("Marker ${markers.size + 1}", latLng)) },
-                        onMapLoaded = {
-                            mapLoaded = true
-                        }
-                    ) {
-                        markers.forEach { marker ->
-                            AdvancedMarker(
-                                state = MarkerState(position = marker.position),
-                                title = marker.id
-                            )
-                        }
-                    }
+                Text(text = locationInfo)
+            }
+            // FAB para añadir flor
+            FloatingActionButton(
+                onClick = {
+                    // Aquí capturas o seleccionas la foto
+                    showRegistrationSheet = true
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Registrar flor")
+            }
 
-                    Column(
-                        Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.TopCenter)
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
+            // Modal de registro
+            if (showRegistrationSheet) {
+                ModalBottomSheet(
+                    onDismissRequest = { showRegistrationSheet = false }
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        flowerPhoto?.let {
+                            Image(
+                                bitmap = it.asImageBitmap(),
+                                contentDescription = "Foto de flor"
+                            )
+                        } ?: Text("No se ha tomado foto aún.")
+
+                        OutlinedTextField(
+                            value = flowerSpecies,
+                            onValueChange = { flowerSpecies = it },
+                            label = { Text("Especie") }
+                        )
+
+                        OutlinedTextField(
+                            value = flowerColor,
+                            onValueChange = { flowerColor = it },
+                            label = { Text("Color") }
+                        )
+
+                        OutlinedTextField(
+                            value = flowerNotes,
+                            onValueChange = { flowerNotes = it },
+                            label = { Text("Notas") },
+                            maxLines = 4
+                        )
+
                         Button(
                             onClick = {
-                                scope.launch {
-                                    isLoading = true
-                                    val result = withContext(Dispatchers.IO) {
-                                        locationClient.getCurrentLocation(
-                                            Priority.PRIORITY_HIGH_ACCURACY,
-                                            CancellationTokenSource().token
-                                        ).await()
-                                    }
-
-                                    result?.let {
-                                        val latLng = LatLng(it.latitude, it.longitude)
-                                        currentLat.value = it.latitude
-                                        currentLng.value = it.longitude
-                                        markers.add(CustomMarker("Mi ubicación", latLng))
-
-                                        withContext(Dispatchers.Main) {
-                                            cameraPositionState.move(
-                                                CameraUpdateFactory.newLatLngZoom(latLng, 15f)
-                                            )
-                                            locationInfo =
-                                                "Ubicación actual:\nlat: ${it.latitude}, long: ${it.longitude}"
-                                        }
-                                    }
-                                    isLoading = false
-                                }
-                            }
+                                // Guardar flor con lat/lng actuales
+                                showRegistrationSheet = false
+                            },
+                            modifier = Modifier.align(Alignment.End)
                         ) {
-                            Text("Actualizar ubicación")
-                        }
-
-                        Text(text = locationInfo)
-                    }
-                    // FAB para añadir flor
-                    FloatingActionButton(
-                        onClick = {
-                            // Aquí capturas o seleccionas la foto
-                            showRegistrationSheet = true
-                        },
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(16.dp),
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Registrar flor")
-                    }
-
-                    // Modal de registro
-                    if (showRegistrationSheet) {
-                        ModalBottomSheet(
-                            onDismissRequest = { showRegistrationSheet = false }
-                        ) {
-                            Column(Modifier.padding(16.dp)) {
-                                flowerPhoto?.let {
-                                    Image(
-                                        bitmap = it.asImageBitmap(),
-                                        contentDescription = "Foto de flor"
-                                    )
-                                } ?: Text("No se ha tomado foto aún.")
-
-                                OutlinedTextField(
-                                    value = flowerSpecies,
-                                    onValueChange = { flowerSpecies = it },
-                                    label = { Text("Especie") }
-                                )
-
-                                OutlinedTextField(
-                                    value = flowerColor,
-                                    onValueChange = { flowerColor = it },
-                                    label = { Text("Color") }
-                                )
-
-                                OutlinedTextField(
-                                    value = flowerNotes,
-                                    onValueChange = { flowerNotes = it },
-                                    label = { Text("Notas") },
-                                    maxLines = 4
-                                )
-
-                                Button(
-                                    onClick = {
-                                        // Guardar flor con lat/lng actuales
-                                        showRegistrationSheet = false
-                                    },
-                                    modifier = Modifier.align(Alignment.End)
-                                ) {
-                                    Text("Guardar")
-                                }
-                            }
+                            Text("Guardar")
                         }
                     }
                 }
             }
         }
-    )
+    }
 }
 
 

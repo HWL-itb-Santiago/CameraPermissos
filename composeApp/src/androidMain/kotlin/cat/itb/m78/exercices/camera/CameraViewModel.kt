@@ -16,12 +16,26 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import cat.itb.m78.exercises.db.MarkersQueries
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class CameraViewModel() : ViewModel(){
+class CameraViewModelFactory(
+    private val markersQueries: MarkersQueries
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(CameraViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return CameraViewModel(markersQueries) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+class CameraViewModel(private val db: MarkersQueries) : ViewModel() {
     var listOfPhotos = mutableListOf<String>()
     var lastPhotoTaken = mutableStateOf("")
 
@@ -34,21 +48,29 @@ class CameraViewModel() : ViewModel(){
         }
     }
 
-    fun closeCamera()
-    {
+    fun closeCamera() {
         _surferRequest.value = null
     }
 
     val imageCaptureUseCase: ImageCapture = ImageCapture.Builder().build()
+
     suspend fun bindToCamera(appContext: Context, lifecycleOwner: LifecycleOwner) {
         val processCameraProvider = ProcessCameraProvider.awaitInstance(appContext)
-        processCameraProvider.bindToLifecycle(lifecycleOwner, DEFAULT_BACK_CAMERA, cameraPreviewUseCase, imageCaptureUseCase
+        processCameraProvider.bindToLifecycle(
+            lifecycleOwner,
+            DEFAULT_BACK_CAMERA,
+            cameraPreviewUseCase,
+            imageCaptureUseCase
         )
-        try { awaitCancellation() } finally { processCameraProvider.unbindAll() }
+        try {
+            awaitCancellation()
+        } finally {
+            processCameraProvider.unbindAll()
+        }
     }
 
     fun takePhoto(context: Context) {
-        val name = "photo_"+ System.nanoTime()
+        val name = "photo_" + System.nanoTime()
         val contentValues = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, name)
             put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
@@ -68,10 +90,22 @@ class CameraViewModel() : ViewModel(){
                 override fun onError(exc: ImageCaptureException) {
                     Log.e("CameraPreview", "Photo capture failed: ${exc.message}", exc)
                 }
+
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    Log.d("CameraPreview", "Photo capture succeeded: ${output.savedUri}")
-                    lastPhotoTaken.value = output.savedUri?.toString() ?: ""
-                    listOfPhotos.add(lastPhotoTaken.value)
+                    val uriString = output.savedUri?.toString() ?: return
+                    Log.d("CameraPreview", "Photo capture succeeded: $uriString")
+                    lastPhotoTaken.value = uriString
+                    listOfPhotos.add(uriString)
+
+                    // Aquí insertamos en la DB
+                    val id = System.currentTimeMillis()
+                    db.insert(
+                        id = id,
+                        markerName = name,
+                        markerData = uriString,
+                        markerLat = 0.0,         // puedes cambiarlo por coordenadas reales
+                        markerLong = 0.0
+                    )
                 }
             }
         )

@@ -5,15 +5,18 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import cat.itb.m78.exercices.camera.CameraScreen
 import cat.itb.m78.exercices.camera.Carrusel
-import cat.itb.m78.exercices.camera.MapScreen
 import cat.itb.m78.exercices.permissions.PermissionsScreen
 import kotlinx.serialization.Serializable
 
 data object Destination
 {
     @Serializable
-    data object DrawerMenu
+    data object CameraScreen
+
+    @Serializable
+    data object Menu
 
     @Serializable
     data object PermissionsScreen
@@ -33,8 +36,14 @@ fun Navigation() {
         startDestination = Destination.PermissionsScreen
     )
     {
+        composable<Destination.CameraScreen> {
+            CameraScreen()
+        }
+        composable<Destination.Menu> {
+            Menu(navHostController = navController)
+        }
         composable<Destination.PermissionsScreen> {
-            PermissionsScreen()
+            PermissionsScreen(navController = navController)
         }
 
         composable<Destination.CarouselScreen> {backStack ->

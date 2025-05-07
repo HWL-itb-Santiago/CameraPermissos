@@ -83,6 +83,7 @@ kotlin {
             implementation("androidx.camera:camera-extensions:1.5.0-alpha06")
             implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
             implementation("app.cash.sqldelight:android-driver:2.0.2")
+            implementation("androidx.startup:startup-runtime:1.2.0")
         }
 
         jvmMain.dependencies {
@@ -163,7 +164,7 @@ sqldelight {
     databases {
         create("Database") {
             packageName.set("cat.itb.m78.exercices.db")
-            schemaOutputDirectory.set(file("src/androidMain/sqldelight/databases"))
+            schemaOutputDirectory.set(file("src/commonMain/sqldelight/databases"))
             verifyMigrations.set(true)
         }
     }

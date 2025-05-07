@@ -143,82 +143,81 @@ private fun PermissionScreen(
 
     val permissions = remember(state.revokedPermissions) {
         state.revokedPermissions.joinToString("\n") {
-            " - " + it.permission.removePrefix("android.permission.")
+            "• " + it.permission.removePrefix("android.permission.")
         }
     }
-    Column(
+
+    androidx.compose.material3.Surface(
+        tonalElevation = 4.dp,
+        shape = MaterialTheme.shapes.medium,
         modifier = Modifier
-            .fillMaxWidth()
-            .animateContentSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .padding(32.dp)
+            .animateContentSize()
     ) {
-        Text(
-            text = "Sample requires permission/s:",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(16.dp),
-        )
-        Text(
-            text = permissions,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(16.dp),
-        )
-        if (description != null) {
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(16.dp),
-            )
-        }
-        Button(
-            onClick = {
-                if (state.shouldShowRationale) {
-                    showRationale = true
-                } else {
-                    state.launchMultiplePermissionRequest()
-                }
-            },
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Grant permissions")
-        }
-        if (errorText.isNotBlank()) {
             Text(
-                text = errorText,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(16.dp),
+                text = "Permisos requeridos",
+                style = MaterialTheme.typography.headlineSmall
             )
+            Text(
+                text = "Acceso a la cámara y a la ubicación",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (!description.isNullOrBlank()) {
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Button(
+                onClick = {
+                    if (state.shouldShowRationale) {
+                        showRationale = true
+                    } else {
+                        state.launchMultiplePermissionRequest()
+                    }
+                }
+            ) {
+                Text(text = "Conceder permisos")
+            }
+            if (errorText.isNotBlank()) {
+                Text(
+                    text = errorText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
+
     if (showRationale) {
         AlertDialog(
-            onDismissRequest = {
-                showRationale = false
-            },
-            title = {
-                Text(text = "Permissions required by the sample")
-            },
+            onDismissRequest = { showRationale = false },
+            title = { Text("Permisos necesarios") },
             text = {
-                Text(text = "The sample requires the following permissions to work:\n $permissions")
+                Text("La aplicación necesita los siguientes permisos:\n\n$permissions")
             },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        showRationale = false
-                        state.launchMultiplePermissionRequest()
-                    },
-                ) {
-                    Text("Continue")
+                TextButton(onClick = {
+                    showRationale = false
+                    state.launchMultiplePermissionRequest()
+                }) {
+                    Text("Continuar")
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = {
-                        showRationale = false
-                    },
-                ) {
-                    Text("Dismiss")
+                TextButton(onClick = { showRationale = false }) {
+                    Text("Cancelar")
                 }
-            },
+            }
         )
     }
 }

@@ -9,8 +9,8 @@ import cat.itb.m78.exercices.camera.CurrentLocationContent
 fun PermissionsScreen(
 ) {
     val permissions = listOf(
-        android.Manifest.permission.ACCESS_COARSE_LOCATION,
         android.Manifest.permission.ACCESS_FINE_LOCATION,
+        android.Manifest.permission.ACCESS_COARSE_LOCATION,
         android.Manifest.permission.CAMERA,
     )
     PermissionBox(

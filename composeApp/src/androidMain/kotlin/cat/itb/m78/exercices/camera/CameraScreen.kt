@@ -12,12 +12,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -127,105 +129,136 @@ fun MapsScreen(){
         }
     }
 }
+
+
+data class CustomMarker(val id: String, val position: LatLng)
+
 @SuppressLint("UnrememberedMutableState")
 @Composable
 fun MapTarget(currentLat: Double, currentLng: Double) {
-    GoogleMap(
-        googleMapOptionsFactory = {
-            GoogleMapOptions().mapId("DEMO_MAP_ID")
-        },
-    ) {
         AdvancedMarker(
             state = MarkerState(position = LatLng(currentLat, currentLng)),
             title = "My Position"
         )
-    }
 }
+
 @RequiresPermission(
     anyOf = [android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION],
 )
+@SuppressLint("UnrememberedMutableState")
 @Composable
 fun CurrentLocationContent(usePreciseLocation: Boolean) {
+    val markers = remember { mutableStateListOf<CustomMarker>() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val locationClient = remember {
         LocationServices.getFusedLocationProviderClient(context)
     }
-    var locationInfo by remember {
-        mutableStateOf("")
-    }
-    val currentLat = remember { mutableStateOf(0.0) }
-    val currentLng = remember { mutableStateOf(87.0) }
-    val cameraPositionState = rememberCameraPositionState()
 
-    LaunchedEffect(currentLat.value, currentLng.value) {
-        val newPosition = LatLng(currentLat.value, currentLng.value)
-        cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(newPosition, 15f))
+    var locationInfo by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(true) }
+
+    val currentLat = remember { mutableStateOf(0.0) }
+    val currentLng = remember { mutableStateOf(0.0) }
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(LatLng(0.0, 0.0), 10f)
+    }
+
+    // Se lanza al cargar el mapa
+    LaunchedEffect(Unit) {
+        val result = locationClient.getCurrentLocation(
+            if (usePreciseLocation) Priority.PRIORITY_HIGH_ACCURACY else Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+            CancellationTokenSource().token
+        ).await()
+
+        result?.let {
+            val latLng = LatLng(it.latitude, it.longitude)
+            currentLat.value = it.latitude
+            currentLng.value = it.longitude
+
+            markers.add(CustomMarker("Mi ubicación", latLng))
+
+            cameraPositionState.move(
+                CameraUpdateFactory.newLatLngZoom(latLng, 15f)
+            )
+
+            locationInfo = "Ubicación actual:\nlat: ${it.latitude}, long: ${it.longitude}"
+        } ?: run {
+            locationInfo = "No se pudo obtener ubicación actual."
+        }
+
+        isLoading = false
     }
 
     Box(Modifier.fillMaxSize()) {
-        GoogleMap(cameraPositionState = cameraPositionState)
-        MapTarget(currentLat.value, currentLng.value)
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .animateContentSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Button(
-                onClick = {
-                    scope.launch(Dispatchers.IO) {
-                        val result = locationClient.lastLocation.await()
-                        locationInfo = if (result == null) {
-                            "No last known location. Try fetching the current location first"
-                        } else {
-                            "Current location is \n" + "lat : ${result.latitude}\n" +
-                                    "long : ${result.longitude}\n" + "fetched at ${System.currentTimeMillis()}"
-                        }
-                    }
+        if (isLoading) {
+            // Indicador de carga mientras se obtiene ubicación
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            // Mapa y elementos después de obtener ubicación
+            GoogleMap(
+                cameraPositionState = cameraPositionState,
+                googleMapOptionsFactory = { GoogleMapOptions().mapId("DEMO_MAP_ID") },
+                onMapClick = { latLng ->
+                    markers.add(CustomMarker("Marker ${markers.size + 1}", latLng))
                 },
             ) {
-                Text("Get last known location")
+                markers.forEach { marker ->
+                    AdvancedMarker(
+                        state = MarkerState(position = marker.position),
+                        title = marker.id
+                    )
+                }
             }
 
-            Button(
-                onClick = {
-                    //To get more accurate or fresher device location use this method
-                    scope.launch(Dispatchers.IO) {
-                        val priority = if (usePreciseLocation) {
-                            Priority.PRIORITY_HIGH_ACCURACY
-                        } else {
-                            Priority.PRIORITY_BALANCED_POWER_ACCURACY
-                        }
-                        val result = locationClient.getCurrentLocation(
-                            priority,
-                            CancellationTokenSource().token,
-                        ).await()
-                        result?.let { fetchedLocation ->
-                            locationInfo =
-                                "Current location is \n" + "lat : ${fetchedLocation.latitude}\n" +
-                                        "long : ${fetchedLocation.longitude}\n" + "fetched at ${System.currentTimeMillis()}"
-                        }
-                        currentLat.value = result.latitude
-                        currentLng.value = result.longitude
-                        withContext(Dispatchers.Main) {
-                            cameraPositionState.move(
-                                CameraUpdateFactory.newLatLngZoom(
-                                    LatLng(result.latitude, result.longitude),
-                                    11f
-                                )
-                            )
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            isLoading = true
+                            val result = withContext(Dispatchers.IO) {
+                                locationClient.getCurrentLocation(
+                                    Priority.PRIORITY_HIGH_ACCURACY,
+                                    CancellationTokenSource().token
+                                ).await()
+                            }
+
+                            result?.let {
+                                val latLng = LatLng(it.latitude, it.longitude)
+                                currentLat.value = it.latitude
+                                currentLng.value = it.longitude
+                                markers.add(CustomMarker("Mi ubicación", latLng))
+
+                                withContext(Dispatchers.Main) {
+                                    cameraPositionState.move(
+                                        CameraUpdateFactory.newLatLngZoom(latLng, 15f)
+                                    )
+                                    locationInfo = "Ubicación actual:\nlat: ${it.latitude}, long: ${it.longitude}"
+                                }
+                            }
+                            isLoading = false
                         }
                     }
-                },
-            ) {
-                Text(text = "Get current location")
+                ) {
+                    Text("Actualizar ubicación")
+                }
+
+                Text(text = locationInfo)
             }
-            Text(
-                text = locationInfo,
-            )
         }
     }
 }
+
+

@@ -16,15 +16,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -160,7 +165,6 @@ fun MapTarget(currentLat: Double, currentLng: Double) {
 @RequiresPermission(
     anyOf = [Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION],
 )
-@SuppressLint("UnrememberedMutableState")
 @Composable
 fun MapScreen(usePreciseLocation: Boolean) {
     val markers = remember { mutableStateListOf<CustomMarker>() }
@@ -186,6 +190,14 @@ fun MapScreen(usePreciseLocation: Boolean) {
     var flowerColor by remember { mutableStateOf("") }
     var flowerNotes by remember { mutableStateOf("") }
 
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Open)
+    val scopeDrawer = rememberCoroutineScope()
+
+    // Función que abre el Drawer
+    fun openDrawer() {
+        scopeDrawer.launch { drawerState.open() }
+    }
+
     // Se lanza al cargar el mapa
     LaunchedEffect(mapLoaded) {
         try {
@@ -207,7 +219,8 @@ fun MapScreen(usePreciseLocation: Boolean) {
                     CameraUpdateFactory.newLatLngZoom(latLng, 15f)
                 )
 
-                locationInfo = "Ubicación actual:\nlat: ${result.latitude}, long: ${result.longitude}"
+                locationInfo =
+                    "Ubicación actual:\nlat: ${result.latitude}, long: ${result.longitude}"
             } else {
                 locationInfo = "No se pudo obtener la ubicación actual."
             }
@@ -218,139 +231,162 @@ fun MapScreen(usePreciseLocation: Boolean) {
             isLoading = false
         }
     }
+
+    // Aquí se invoca el DrawerMenu, pasando el contenido del mapa como argumento
     DrawerMenu(
-        content =
-            {
-                Box(Modifier.fillMaxSize()) {
-                    if (isLoading) {
-                        // Indicador de carga mientras se obtiene ubicación
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
+//        drawerState = drawerState,
+//        drawerContent = {
+//            // Aquí defines el contenido de tu Drawer, como botones o listas
+//            Column {
+//                Text("Opción 1")
+//                Text("Opción 2")
+//                Button(onClick = { scopeDrawer.launch { drawerState.close() } }) {
+//                    Text("Cerrar")
+//                }
+//            }
+//        },
+//        gesturesEnabled = drawerState.isOpen, // Solo habilitar gestos si el Drawer está abierto
+        content = {
+            Box(Modifier.fillMaxSize()) {
+                // Aquí, agregar el botón para abrir el Drawer (por ejemplo, un icono de hamburguesa)
+                IconButton(
+                    onClick = { openDrawer() },
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Icon(Icons.Default.Menu, contentDescription = "Abrir menú")
+                }
+
+                if (isLoading) {
+                    // Indicador de carga mientras se obtiene ubicación
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    // Mapa y elementos después de obtener ubicación
+                    GoogleMap(
+                        cameraPositionState = cameraPositionState,
+                        googleMapOptionsFactory = { GoogleMapOptions().mapId("DEMO_MAP_ID") },
+                        onMapClick = { latLng -> markers.add(CustomMarker("Marker ${markers.size + 1}", latLng)) },
+                        onMapLoaded = {
+                            mapLoaded = true
                         }
-                    } else {
-                        // Mapa y elementos después de obtener ubicación
-                        GoogleMap(
-                            cameraPositionState = cameraPositionState,
-                            googleMapOptionsFactory = { GoogleMapOptions().mapId("DEMO_MAP_ID") },
-                            onMapClick = { latLng ->
-                                markers.add(CustomMarker("Marker ${markers.size + 1}", latLng))
-                            },
-                            onMapLoaded = {
-                                mapLoaded = true
-                            }
-                        ) {
-                            markers.forEach { marker ->
-                                AdvancedMarker(
-                                    state = MarkerState(position = marker.position),
-                                    title = marker.id
-                                )
-                            }
+                    ) {
+                        markers.forEach { marker ->
+                            AdvancedMarker(
+                                state = MarkerState(position = marker.position),
+                                title = marker.id
+                            )
                         }
+                    }
 
-                        Column(
-                            Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.TopCenter)
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Button(
-                                onClick = {
-                                    scope.launch {
-                                        isLoading = true
-                                        val result = withContext(Dispatchers.IO) {
-                                            locationClient.getCurrentLocation(
-                                                Priority.PRIORITY_HIGH_ACCURACY,
-                                                CancellationTokenSource().token
-                                            ).await()
-                                        }
-
-                                        result?.let {
-                                            val latLng = LatLng(it.latitude, it.longitude)
-                                            currentLat.value = it.latitude
-                                            currentLng.value = it.longitude
-                                            markers.add(CustomMarker("Mi ubicación", latLng))
-
-                                            withContext(Dispatchers.Main) {
-                                                cameraPositionState.move(
-                                                    CameraUpdateFactory.newLatLngZoom(latLng, 15f)
-                                                )
-                                                locationInfo = "Ubicación actual:\nlat: ${it.latitude}, long: ${it.longitude}"
-                                            }
-                                        }
-                                        isLoading = false
-                                    }
-                                }
-                            ) {
-                                Text("Actualizar ubicación")
-                            }
-
-                            Text(text = locationInfo)
-                        }
-                        // FAB para añadir flor
-                        FloatingActionButton(
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter)
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Button(
                             onClick = {
-                                // Aquí capturas o seleccionas la foto
-                                showRegistrationSheet = true
-                            },
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(16.dp),
-                            containerColor = MaterialTheme.colorScheme.primary
+                                scope.launch {
+                                    isLoading = true
+                                    val result = withContext(Dispatchers.IO) {
+                                        locationClient.getCurrentLocation(
+                                            Priority.PRIORITY_HIGH_ACCURACY,
+                                            CancellationTokenSource().token
+                                        ).await()
+                                    }
+
+                                    result?.let {
+                                        val latLng = LatLng(it.latitude, it.longitude)
+                                        currentLat.value = it.latitude
+                                        currentLng.value = it.longitude
+                                        markers.add(CustomMarker("Mi ubicación", latLng))
+
+                                        withContext(Dispatchers.Main) {
+                                            cameraPositionState.move(
+                                                CameraUpdateFactory.newLatLngZoom(latLng, 15f)
+                                            )
+                                            locationInfo =
+                                                "Ubicación actual:\nlat: ${it.latitude}, long: ${it.longitude}"
+                                        }
+                                    }
+                                    isLoading = false
+                                }
+                            }
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Registrar flor")
+                            Text("Actualizar ubicación")
                         }
 
-// Modal de registro
-                        if (showRegistrationSheet) {
-                            ModalBottomSheet(
-                                onDismissRequest = { showRegistrationSheet = false }
-                            ) {
-                                Column(Modifier.padding(16.dp)) {
-                                    flowerPhoto?.let {
-                                        Image(bitmap = it.asImageBitmap(), contentDescription = "Foto de flor")
-                                    } ?: Text("No se ha tomado foto aún.")
+                        Text(text = locationInfo)
+                    }
+                    // FAB para añadir flor
+                    FloatingActionButton(
+                        onClick = {
+                            // Aquí capturas o seleccionas la foto
+                            showRegistrationSheet = true
+                        },
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(16.dp),
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Registrar flor")
+                    }
 
-                                    OutlinedTextField(
-                                        value = flowerSpecies,
-                                        onValueChange = { flowerSpecies = it },
-                                        label = { Text("Especie") }
+                    // Modal de registro
+                    if (showRegistrationSheet) {
+                        ModalBottomSheet(
+                            onDismissRequest = { showRegistrationSheet = false }
+                        ) {
+                            Column(Modifier.padding(16.dp)) {
+                                flowerPhoto?.let {
+                                    Image(
+                                        bitmap = it.asImageBitmap(),
+                                        contentDescription = "Foto de flor"
                                     )
+                                } ?: Text("No se ha tomado foto aún.")
 
-                                    OutlinedTextField(
-                                        value = flowerColor,
-                                        onValueChange = { flowerColor = it },
-                                        label = { Text("Color") }
-                                    )
+                                OutlinedTextField(
+                                    value = flowerSpecies,
+                                    onValueChange = { flowerSpecies = it },
+                                    label = { Text("Especie") }
+                                )
 
-                                    OutlinedTextField(
-                                        value = flowerNotes,
-                                        onValueChange = { flowerNotes = it },
-                                        label = { Text("Notas") },
-                                        maxLines = 4
-                                    )
+                                OutlinedTextField(
+                                    value = flowerColor,
+                                    onValueChange = { flowerColor = it },
+                                    label = { Text("Color") }
+                                )
 
-                                    Button(
-                                        onClick = {
-                                            // Guardar flor con lat/lng actuales
-                                            showRegistrationSheet = false
-                                        },
-                                        modifier = Modifier.align(Alignment.End)
-                                    ) {
-                                        Text("Guardar")
-                                    }
+                                OutlinedTextField(
+                                    value = flowerNotes,
+                                    onValueChange = { flowerNotes = it },
+                                    label = { Text("Notas") },
+                                    maxLines = 4
+                                )
+
+                                Button(
+                                    onClick = {
+                                        // Guardar flor con lat/lng actuales
+                                        showRegistrationSheet = false
+                                    },
+                                    modifier = Modifier.align(Alignment.End)
+                                ) {
+                                    Text("Guardar")
                                 }
                             }
                         }
-
                     }
                 }
             }
+        }
     )
 }
+
 
 

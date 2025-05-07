@@ -1,8 +1,10 @@
 package cat.itb.m78.exercices.navigation
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -11,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -107,3 +110,32 @@ fun DrawerMenu(
         }
     }
 }
+
+//@Composable
+//fun DrawerMenu(content: @Composable () -> Unit) {
+//    // Estado del Drawer
+//    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+//    val scope = rememberCoroutineScope()
+//
+//    // Contenido del Drawer
+//    ModalNavigationDrawer(
+//        drawerState = drawerState,
+//        drawerContent = {
+//            // Aquí defines el contenido de tu Drawer, como botones o listas
+//            Column {
+//                Text("Opción 1")
+//                Text("Opción 2")
+//                Button(onClick = { scope.launch { drawerState.close() } }) {
+//                    Text("Cerrar")
+//                }
+//            }
+//        },
+//        gesturesEnabled = drawerState.isOpen, // Solo habilitar gestos si el Drawer está abierto
+//        content = {
+//            // El contenido principal de la pantalla (tu mapa)
+//            Box(Modifier.fillMaxSize()) {
+//                content() // Aquí pasas el contenido que tiene el mapa y otros componentes
+//            }
+//        }
+//    )
+//}

@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlinx.serialization)
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
+    id("app.cash.sqldelight") version "2.0.2"
 }
 
 composeCompiler {
@@ -58,6 +59,7 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation("io.coil-kt.coil3:coil-compose:3.1.0")
             implementation("io.coil-kt.coil3:coil-network-ktor3:3.1.0")
+            implementation("app.cash.sqldelight:coroutines-extensions:2.0.2")
         }
 
         commonTest.dependencies {
@@ -80,12 +82,14 @@ kotlin {
             implementation("androidx.camera:camera-lifecycle:1.5.0-alpha06")
             implementation("androidx.camera:camera-extensions:1.5.0-alpha06")
             implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+            implementation("app.cash.sqldelight:android-driver:2.0.2")
         }
 
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
             implementation(libs.ktor.client.okhttp)
+            implementation("app.cash.sqldelight:sqlite-driver:2.0.2")
         }
 
         iosMain.dependencies {
@@ -155,6 +159,15 @@ secrets {
     ignoreList.add("sdk.*")       // Ignore all keys matching the regexp "sdk.*"
 }
 
+sqldelight {
+    databases {
+        create("Database") {
+            packageName.set("cat.itb.m78.exercices.db")
+            schemaOutputDirectory.set(file("src/androidMain/sqldelight/databases"))
+            verifyMigrations.set(true)
+        }
+    }
+}
 
 tasks.register<ComposeHotRun>("runHot") {
     mainClass.set("HotrunKt")

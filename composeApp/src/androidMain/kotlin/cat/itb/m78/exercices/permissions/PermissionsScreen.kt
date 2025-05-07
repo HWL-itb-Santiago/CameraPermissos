@@ -2,7 +2,7 @@ package cat.itb.m78.exercices.permissions
 
 import android.annotation.SuppressLint
 import androidx.compose.runtime.Composable
-import cat.itb.m78.exercices.camera.CurrentLocationContent
+import cat.itb.m78.exercices.camera.MapScreen
 
 @SuppressLint("MissingPermission")
 @Composable
@@ -17,7 +17,7 @@ fun PermissionsScreen(
         permissions = permissions,
         requiredPermissions = permissions,
         onGranted = {
-            CurrentLocationContent(
+            MapScreen(
                 usePreciseLocation = it.contains(android.Manifest.permission.ACCESS_FINE_LOCATION),
             )
         },

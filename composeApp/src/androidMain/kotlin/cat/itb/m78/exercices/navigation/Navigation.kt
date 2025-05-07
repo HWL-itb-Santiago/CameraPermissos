@@ -6,12 +6,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import cat.itb.m78.exercices.camera.Carrusel
-import cat.itb.m78.exercices.camera.CurrentLocationContent
+import cat.itb.m78.exercices.camera.MapScreen
 import cat.itb.m78.exercices.permissions.PermissionsScreen
 import kotlinx.serialization.Serializable
 
 data object Destination
 {
+    @Serializable
+    data object DrawerMenu
+
     @Serializable
     data object PermissionsScreen
 

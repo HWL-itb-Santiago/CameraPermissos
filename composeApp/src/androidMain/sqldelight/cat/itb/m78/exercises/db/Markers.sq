@@ -1,0 +1,24 @@
+CREATE TABLE MarkersDB (
+  id INTEGER PRIMARY KEY NOT NULL,
+  markerName TEXT NOT NULL,
+  markerData TEXT NOT NULL,
+  markerLat REAL NOT NULL,
+  markerLong REAL NOT NULL
+);
+
+CREATE INDEX MarkerFullName ON MarkersDB(id);
+deleteById:
+DELETE FROM MarkersDB WHERE id = ?;
+selectById:
+SELECT * FROM MarkersDB WHERE id = ?;
+selectAll:
+SELECT * FROM MarkersDB;
+insert:
+INSERT INTO MarkersDB(
+    id,
+    markerName,
+    markerData,
+    markerLat,
+    markerLong
+)
+VALUES ( ?, ?, ?, ?, ?);

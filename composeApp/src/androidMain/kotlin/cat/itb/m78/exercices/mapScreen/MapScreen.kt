@@ -176,7 +176,7 @@ fun MapScreen(usePreciseLocation: Boolean, navController: NavController) {
                             title = marker.markerName,
                             snippet = "Ver foto",
                             onClick = {
-                                navController.navigate("markerDetailScreen/${marker.markerData}")
+                                navController.navigate(Destination.MarkerDetailScreen(marker.markerData))
                                 true
                             }
                         )

@@ -1,33 +1,24 @@
 package cat.itb.m78.exercices.camera
 
+import android.net.Uri
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.TargetedFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
-import androidx.compose.material3.carousel.CarouselDefaults
-import androidx.compose.material3.carousel.CarouselItemScope
-import androidx.compose.material3.carousel.CarouselState
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -43,7 +34,7 @@ import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Carrusel(uriImages: List<String>, navController: NavController) {
+fun Carrusel(uriImages: List<Uri>, navController: NavController) {
     var selectedImageIndex by remember { mutableStateOf(0) }
     var showImageDetails by remember { mutableStateOf(false) }
     
@@ -173,7 +164,7 @@ fun Carrusel(uriImages: List<String>, navController: NavController) {
 @ExperimentalMaterial3Api
 @Composable
 fun CarouselHorizontalExample(
-    listOfImages: List<String>,
+    listOfImages: List<Uri>,
     onImageSelected: (Int) -> Unit
 ) {
     val state = rememberCarouselState(itemCount = { listOfImages.size }, initialItem = 0)

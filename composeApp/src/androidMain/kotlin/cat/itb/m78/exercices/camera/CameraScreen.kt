@@ -31,6 +31,7 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
+import cat.itb.m78.exercices.navigation.Destination
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @RequiresPermission(
@@ -181,7 +182,11 @@ fun CameraScreen(navController: NavController) {
                         FloatingActionButton(
                             onClick = {
                                 val photos = viewModel.getAllPhotos()
-                                navController.navigate("carouselScreen/${photos.joinToString(",")}")
+                                if (photos.isNotEmpty()) {
+                                    navController.navigate(Destination.CarouselScreen(photos))
+                                } else {
+                                    Log.d("CameraScreen", "No hay fotos disponibles")
+                                }
                             },
                             containerColor = MaterialTheme.colorScheme.secondary,
                             contentColor = Color.White

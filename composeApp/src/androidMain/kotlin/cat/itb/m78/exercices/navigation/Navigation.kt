@@ -2,8 +2,8 @@ package cat.itb.m78.exercices.navigation
 
 import android.Manifest
 import androidx.annotation.RequiresPermission
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.core.net.toUri
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -64,7 +64,9 @@ fun Navigation() {
         }
         
         composable<Destination.CarouselScreen> { backStackEntry ->
-            val uriImages = backStackEntry.toRoute<Destination.CarouselScreen>().uriImages
+            val images = backStackEntry.toRoute<Destination.CarouselScreen>().uriImages
+            // Convert the list of strings to a list of URIs
+            val uriImages = images.map { it.toUri() }
             Carrusel(
                 uriImages = uriImages,
                 navController = navController

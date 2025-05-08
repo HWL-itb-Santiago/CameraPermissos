@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.launch
@@ -64,16 +65,6 @@ fun DrawerMenu(navController: NavHostController) {
                         onClick = {
                             scope.launch { drawerState.close() }
                             navController.navigate(Destination.CameraScreen)
-                        }
-                    )
-                    NavigationDrawerItem(
-                        label = { Text("Galería") },
-                        selected = false,
-                        onClick = {
-                            scope.launch { drawerState.close() }
-                            navController.navigate(Destination.CarouselScreen(
-                                uriImages = TODO()
-                            ))
                         }
                     )
                     NavigationDrawerItem(

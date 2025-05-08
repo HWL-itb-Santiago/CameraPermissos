@@ -166,6 +166,8 @@ sqldelight {
             packageName.set("cat.itb.m78.exercices.db")
             schemaOutputDirectory.set(file("src/commonMain/sqldelight/databases"))
             verifyMigrations.set(true)
+            migrationOutputDirectory.set(file("src/commonMain/sqldelight/migrations"))
+            migrationOutputFileFormat.set("Migration_%d")
         }
     }
 }

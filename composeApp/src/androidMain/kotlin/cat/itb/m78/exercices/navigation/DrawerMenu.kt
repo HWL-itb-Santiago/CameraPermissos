@@ -1,5 +1,7 @@
 package cat.itb.m78.exercices.navigation
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,7 +31,9 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.launch
@@ -39,6 +43,7 @@ import kotlinx.coroutines.launch
 fun DrawerMenu(navController: NavHostController) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     ModalNavigationDrawer(
         drawerContent = {
@@ -66,7 +71,9 @@ fun DrawerMenu(navController: NavHostController) {
                         selected = false,
                         onClick = {
                             scope.launch { drawerState.close() }
-                            navController.navigate(Destination.CameraScreen)
+                            navController.navigate(Destination.CarouselScreen(
+                                uriImages = TODO()
+                            ))
                         }
                     )
                     NavigationDrawerItem(
@@ -87,7 +94,11 @@ fun DrawerMenu(navController: NavHostController) {
                         icon = { Icon(Icons.Outlined.Settings, contentDescription = null) },
                         onClick = {
                             scope.launch { drawerState.close() }
-                            navController.navigate(Destination.CameraScreen)
+                            val intent = Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                "package:${context.packageName}".toUri(),
+                            )
+                            context.startActivity(intent)
                         }
                     )
                     Spacer(Modifier.height(12.dp))

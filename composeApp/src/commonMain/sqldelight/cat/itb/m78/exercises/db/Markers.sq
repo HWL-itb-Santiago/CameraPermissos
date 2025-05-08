@@ -7,14 +7,20 @@ CREATE TABLE MarkersDB (
 );
 
 CREATE INDEX MarkerFullName ON MarkersDB(id);
-deleteAll:
-DELETE FROM MarkersDB;
+CREATE INDEX MarkerData ON MarkersDB(markerData);
+
 deleteById:
 DELETE FROM MarkersDB WHERE id = ?;
+
 selectById:
 SELECT * FROM MarkersDB WHERE id = ?;
+
+selectByUri:
+SELECT * FROM MarkersDB WHERE markerData = ?;
+
 selectAll:
 SELECT * FROM MarkersDB;
+
 insert:
 INSERT INTO MarkersDB(
     id,
@@ -24,3 +30,8 @@ INSERT INTO MarkersDB(
     markerLong
 )
 VALUES ( ?, ?, ?, ?, ?);
+
+updateMarkerName:
+UPDATE MarkersDB
+SET markerName = ?
+WHERE id = ?;

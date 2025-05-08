@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
@@ -21,7 +22,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,6 +37,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -46,7 +51,9 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.maps.android.compose.AdvancedMarker
 import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -55,6 +62,7 @@ import kotlinx.coroutines.withContext
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import cat.itb.m78.exercices.database
+import cat.itb.m78.exercices.navigation.Destination
 
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresPermission(
@@ -81,7 +89,6 @@ fun MapScreen(usePreciseLocation: Boolean, navController: NavController) {
     }
 
     var showRegistrationSheet by remember { mutableStateOf(false) }
-    var flowerPhoto by remember { mutableStateOf<Bitmap?>(null) }
     var flowerSpecies by remember { mutableStateOf("") }
     var flowerColor by remember { mutableStateOf("") }
     var flowerNotes by remember { mutableStateOf("") }
@@ -108,10 +115,6 @@ fun MapScreen(usePreciseLocation: Boolean, navController: NavController) {
                 val latLng = LatLng(result.latitude, result.longitude)
                 currentLat.value = result.latitude
                 currentLng.value = result.longitude
-
-                val markers = database.markersQueries.selectAll().executeAsList()
-                locationInfo = "Markers: ${markers.size}"
-                mapViewModel.getMarkers()
                 cameraPositionState.move(
                     CameraUpdateFactory.newLatLngZoom(latLng, 15f)
                 )
@@ -126,172 +129,120 @@ fun MapScreen(usePreciseLocation: Boolean, navController: NavController) {
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize(0.8f)
-            .padding(bottom = 56.dp) // Espacio para el FAB
-            .padding(top = 56.dp), // Espacio para el botón de menú
-        contentAlignment = Alignment.Center,
-
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Mapa de Fotos") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = Color.White
+                )
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { navController.navigate(Destination.CameraScreen) },
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(Icons.Default.Edit, contentDescription = "Tomar Foto")
+            }
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
         ) {
-        if (isLoading) {
-            // Indicador de carga mientras se obtiene ubicación
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            // Mapa y elementos después de obtener ubicación
-            GoogleMap(
-                cameraPositionState = cameraPositionState,
-                googleMapOptionsFactory = { GoogleMapOptions().mapId("DEMO_MAP_ID") },
-                onMapClick = { latLng ->
-                    //mapViewModel.addMarker(CustomMarker("Marker ${markers.size + 1}", latLng))
-                },
-                onMapLoaded = {
-                    mapViewModel.setMapLoaded(true)
-                }
-            ) {
-                markers.forEach { marker ->
-                    AdvancedMarker(
-                        state = MarkerState(position = marker.position),
-                        title = marker.id,
-                        onClick = {
-                            // Usamos el tag para almacenar información adicional
-                            val photoUri = marker.uri
-
-                            // Navegar a la pantalla de detalles, pasando la URI de la foto
-                            navController.navigate("markerDetailScreen/$photoUri")
-
-                            true
-                        }
-                    )
-                }
-            }
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Button(
-                    onClick = {
-                        scope.launch {
-                            isLoading = true
-                            val result = withContext(Dispatchers.IO) {
-                                locationClient.getCurrentLocation(
-                                    Priority.PRIORITY_HIGH_ACCURACY,
-                                    CancellationTokenSource().token
-                                ).await()
-                            }
-
-                            result?.let {
-                                val latLng = LatLng(it.latitude, it.longitude)
-                                currentLat.value = it.latitude
-                                currentLng.value = it.longitude
-
-                                //mapViewModel.addMarker(CustomMarker("Mi ubicación", latLng))
-
-                                withContext(Dispatchers.Main) {
-                                    cameraPositionState.move(
-                                        CameraUpdateFactory.newLatLngZoom(latLng, 15f)
-                                    )
-                                    locationInfo =
-                                        "Ubicación actual:\nlat: ${it.latitude}, long: ${it.longitude}"
-                                }
-                            }
-                            isLoading = false
-                        }
-                    }
+            if (isLoading) {
+                // Indicador de carga mientras se obtiene ubicación
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text("Actualizar ubicación")
+                    CircularProgressIndicator()
                 }
-
-                Text(text = locationInfo)
-            }
-            // FAB para añadir flor
-            FloatingActionButton(
-                onClick = {
-                    // Aquí capturas o seleccionas la foto
-                    showRegistrationSheet = true
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Registrar flor")
-            }
-            // Botón de menú
-            FloatingActionButton(
-                onClick = { openDrawer() },
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(16.dp),
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Abrir menú")
-            }
-            // Eliminar marcador
-            FloatingActionButton(
-                onClick = {
-                    mapViewModel.deleteAllMarkers()
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(16.dp),
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Eliminar marcador")
-            }
-
-            // Modal de registro
-            if (showRegistrationSheet) {
-                ModalBottomSheet(
-                    onDismissRequest = { showRegistrationSheet = false }
+            } else {
+                // Mapa y elementos después de obtener ubicación
+                GoogleMap(
+                    modifier = Modifier.fillMaxSize(),
+                    cameraPositionState = cameraPositionState,
+                    properties = MapProperties(isMyLocationEnabled = true),
+                    onMapLoaded = { mapViewModel.onMapLoaded() }
                 ) {
-                    Column(Modifier.padding(16.dp)) {
-                        flowerPhoto?.let {
-                            Image(
-                                bitmap = it.asImageBitmap(),
-                                contentDescription = "Foto de flor"
-                            )
-                        } ?: Text("No se ha tomado foto aún.")
-
-                        OutlinedTextField(
-                            value = flowerSpecies,
-                            onValueChange = { flowerSpecies = it },
-                            label = { Text("Especie") }
-                        )
-
-                        OutlinedTextField(
-                            value = flowerColor,
-                            onValueChange = { flowerColor = it },
-                            label = { Text("Color") }
-                        )
-
-                        OutlinedTextField(
-                            value = flowerNotes,
-                            onValueChange = { flowerNotes = it },
-                            label = { Text("Notas") },
-                            maxLines = 4
-                        )
-
-                        Button(
+                    // Mostrar marcadores de fotos
+                    markers.forEach { marker ->
+                        Marker(
+                            state = MarkerState(position = LatLng(marker.markerLat, marker.markerLong)),
+                            title = marker.markerName,
+                            snippet = "Ver foto",
                             onClick = {
-                                // Guardar flor con lat/lng actuales
-                                showRegistrationSheet = false
-                            },
-                            modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Text("Guardar")
-                        }
+                                navController.navigate("markerDetailScreen/${marker.markerData}")
+                                true
+                            }
+                        )
                     }
                 }
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                }
+                // FAB para añadir flor
+//                FloatingActionButton(
+//                    onClick = {
+//                        // Aquí capturas o seleccionas la foto
+//                        showRegistrationSheet = true
+//                    },
+//                    modifier = Modifier
+//                        .align(Alignment.BottomEnd)
+//                        .padding(16.dp),
+//                    containerColor = MaterialTheme.colorScheme.primary
+//                ) {
+//                    Icon(Icons.Default.Add, contentDescription = "Registrar flor")
+//                }
+
+                // Modal de registro
+                // No implementado aun
+//                if (showRegistrationSheet) {
+//                    ModalBottomSheet(
+//                        onDismissRequest = { showRegistrationSheet = false }
+//                    ) {
+//                        Column(Modifier.padding(16.dp)) {
+//                            OutlinedTextField(
+//                                value = flowerSpecies,
+//                                onValueChange = { flowerSpecies = it },
+//                                label = { Text("Especie") }
+//                            )
+//
+//                            OutlinedTextField(
+//                                value = flowerColor,
+//                                onValueChange = { flowerColor = it },
+//                                label = { Text("Color") }
+//                            )
+//
+//                            OutlinedTextField(
+//                                value = flowerNotes,
+//                                onValueChange = { flowerNotes = it },
+//                                label = { Text("Notas") },
+//                                maxLines = 4
+//                            )
+//
+//                            Button(
+//                                onClick = {
+//                                    // Guardar flor con lat/lng actuales
+//                                    showRegistrationSheet = false
+//                                },
+//                                modifier = Modifier.align(Alignment.End)
+//                            ) {
+//                                Text("Guardar")
+//                            }
+//                        }
+//                    }
+//                }
             }
         }
     }

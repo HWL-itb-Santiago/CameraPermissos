@@ -9,9 +9,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import cat.itb.m78.exercices.camera.CameraScreen
-import cat.itb.m78.exercices.camera.CarouselPage
+import cat.itb.m78.exercices.camera.Carrusel
 import cat.itb.m78.exercices.mapScreen.MapScreen
-import cat.itb.m78.exercices.mapScreen.MarkerDetailPage
+import cat.itb.m78.exercices.mapScreen.MarkerDetailScreen
 import cat.itb.m78.exercices.permissions.PermissionsScreen
 import kotlinx.serialization.Serializable
 
@@ -65,17 +65,17 @@ fun Navigation() {
         
         composable<Destination.CarouselScreen> { backStackEntry ->
             val uriImages = backStackEntry.toRoute<Destination.CarouselScreen>().uriImages
-            CarouselPage(
-                backToHomePage = { navController.navigateUp() },
-                uriImages = uriImages
+            Carrusel(
+                uriImages = uriImages,
+                navController = navController
             )
         }
 
         composable<Destination.MarkerDetailScreen> { backStackEntry ->
             val photoUri = backStackEntry.toRoute<Destination.MarkerDetailScreen>().photoUri
-            MarkerDetailPage(
-                backToHomePage = { navController.navigateUp() },
-                photoUri = photoUri
+            MarkerDetailScreen(
+                photoUri = photoUri,
+                navController = navController
             )
         }
     }

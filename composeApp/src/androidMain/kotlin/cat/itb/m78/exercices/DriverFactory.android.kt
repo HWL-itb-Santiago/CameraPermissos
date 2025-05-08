@@ -8,3 +8,5 @@ actual fun createDriver(): SqlDriver {
     val appContext = applicationContext
     return AndroidSqliteDriver(Database.Schema, appContext, "flowers.db")
 }
+
+val database by lazy { createDatabase() }

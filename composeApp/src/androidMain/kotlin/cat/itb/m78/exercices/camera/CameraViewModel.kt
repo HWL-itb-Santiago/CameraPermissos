@@ -16,28 +16,25 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import cat.itb.m78.exercises.db.MarkersQueries
+import androidx.lifecycle.viewModelScope
+import cat.itb.m78.exercices.database
+import cat.itb.m78.exercises.db.MarkersDB
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
-class CameraViewModelFactory(
-    private val markersQueries: MarkersQueries
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(CameraViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return CameraViewModel(markersQueries) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
+class CameraViewModel() : ViewModel(){
+    private val _locationClient = MutableStateFlow<android.location.LocationManager?>(null)
+    var locationClient : StateFlow<android.location.LocationManager?> = _locationClient.asStateFlow()
 
-class CameraViewModel(private val db: MarkersQueries) : ViewModel() {
-    var listOfPhotos = mutableListOf<String>()
-    var lastPhotoTaken = mutableStateOf("")
+    private val _currentLat = MutableStateFlow<Double>(0.0)
+    var currentLat : StateFlow<Double>  = _currentLat.asStateFlow()
+
+    private val _currentLong = MutableStateFlow<Double>(0.0)
+    var currentLong : StateFlow<Double>  = _currentLong.asStateFlow()
 
     private val _surferRequest = MutableStateFlow<SurfaceRequest?>(null)
     val surferRequest: StateFlow<SurfaceRequest?> = _surferRequest.asStateFlow()
@@ -48,29 +45,66 @@ class CameraViewModel(private val db: MarkersQueries) : ViewModel() {
         }
     }
 
-    fun closeCamera() {
+    fun updateLocation(lat: Double, lng: Double) {
+        _currentLat.value = lat
+        _currentLong.value = lng
+    }
+    fun setLocationClient(locationClient: android.location.LocationManager) {
+        _locationClient.value = locationClient
+    }
+    fun getLocationClient(): android.location.LocationManager? {
+        return _locationClient.value
+    }
+    fun closeCamera()
+    {
         _surferRequest.value = null
     }
 
-    val imageCaptureUseCase: ImageCapture = ImageCapture.Builder().build()
-
-    suspend fun bindToCamera(appContext: Context, lifecycleOwner: LifecycleOwner) {
-        val processCameraProvider = ProcessCameraProvider.awaitInstance(appContext)
-        processCameraProvider.bindToLifecycle(
-            lifecycleOwner,
-            DEFAULT_BACK_CAMERA,
-            cameraPreviewUseCase,
-            imageCaptureUseCase
-        )
-        try {
-            awaitCancellation()
-        } finally {
-            processCameraProvider.unbindAll()
+    fun insertPhoto(
+        idPhoto: String,
+        markerName: String,
+        markerData: String,
+        markerLat: Double,
+        markerLong: Double
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                database.markersQueries.insert(
+                    id = idPhoto,
+                    markerName = markerName,
+                    markerData = markerData,
+                    markerLat = markerLat,
+                    markerLong = markerLong
+                )
+            } catch (e: Exception) {
+                Log.e("Database", "Error al insertar foto", e)
+            }
         }
     }
 
+    fun deletePhoto(idPhoto: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                database.markersQueries.deleteById(idPhoto)
+            } catch (e: Exception) {
+                Log.e("Database", "Error al eliminar foto", e)
+            }
+        }
+    }
+
+    fun getAllPhotos(): List<MarkersDB> {
+        return database.markersQueries.selectAll().executeAsList()
+    }
+    val imageCaptureUseCase: ImageCapture = ImageCapture.Builder().build()
+    suspend fun bindToCamera(appContext: Context, lifecycleOwner: LifecycleOwner) {
+        val processCameraProvider = ProcessCameraProvider.awaitInstance(appContext)
+        processCameraProvider.bindToLifecycle(lifecycleOwner, DEFAULT_BACK_CAMERA, cameraPreviewUseCase, imageCaptureUseCase
+        )
+        try { awaitCancellation() } finally { processCameraProvider.unbindAll() }
+    }
+
     fun takePhoto(context: Context) {
-        val name = "photo_" + System.nanoTime()
+        val name = "photo_"+ System.nanoTime()
         val contentValues = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, name)
             put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
@@ -90,24 +124,27 @@ class CameraViewModel(private val db: MarkersQueries) : ViewModel() {
                 override fun onError(exc: ImageCaptureException) {
                     Log.e("CameraPreview", "Photo capture failed: ${exc.message}", exc)
                 }
-
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    val uriString = output.savedUri?.toString() ?: return
-                    Log.d("CameraPreview", "Photo capture succeeded: $uriString")
-                    lastPhotoTaken.value = uriString
-                    listOfPhotos.add(uriString)
-
-                    // Aquí insertamos en la DB
-                    val id = System.currentTimeMillis()
-                    db.insert(
-                        id = id,
-                        markerName = name,
-                        markerData = uriString,
-                        markerLat = 0.0,         // puedes cambiarlo por coordenadas reales
-                        markerLong = 0.0
-                    )
+                    Log.d("CameraPreview", "Photo capture succeeded: ${output.savedUri}")
+                    output.savedUri?.let {
+                        insertPhoto(
+                            //Generar idphoto unico sin usar el uri
+                            idPhoto = generateUniqueIdPhoto(),
+                            markerName = "Photo",
+                            markerData = it.toString(),
+                            markerLat = currentLat.value,
+                            markerLong = currentLong.value
+                        )
+                    }
                 }
             }
         )
+    }
+
+    private fun generateUniqueIdPhoto(): String {
+        val currentTime = System.currentTimeMillis()
+        val randomNumber = (0..9999).random()
+        return "photo_$currentTime$randomNumber"
+
     }
 }

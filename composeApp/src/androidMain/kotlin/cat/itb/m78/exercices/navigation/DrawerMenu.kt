@@ -70,11 +70,11 @@ fun DrawerMenu(navController: NavHostController) {
                         }
                     )
                     NavigationDrawerItem(
-                        label = { Text("Estadísticas") },
+                        label = { Text("Marcadores") },
                         selected = false,
                         onClick = {
                             scope.launch { drawerState.close() }
-                            navController.navigate(Destination.CameraScreen)
+                            navController.navigate(Destination.MapScreen)
                         }
                     )
 

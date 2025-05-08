@@ -1,5 +1,5 @@
 CREATE TABLE MarkersDB (
-  id INTEGER PRIMARY KEY NOT NULL,
+  id TEXT PRIMARY KEY NOT NULL,
   markerName TEXT NOT NULL,
   markerData TEXT NOT NULL,
   markerLat REAL NOT NULL,
@@ -7,6 +7,8 @@ CREATE TABLE MarkersDB (
 );
 
 CREATE INDEX MarkerFullName ON MarkersDB(id);
+deleteAll:
+DELETE FROM MarkersDB;
 deleteById:
 DELETE FROM MarkersDB WHERE id = ?;
 selectById:

@@ -3,7 +3,6 @@ package cat.itb.m78.exercices.permissions
 import android.annotation.SuppressLint
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
-import cat.itb.m78.exercices.camera.MapScreen
 import cat.itb.m78.exercices.navigation.Menu
 
 @SuppressLint("MissingPermission")
